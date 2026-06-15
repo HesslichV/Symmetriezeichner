@@ -1,0 +1,117 @@
+       
+<h1>Live Symmetrie-Zeichner</h1>
+
+<div id="controls">
+    <button id="mode-mirror" aria-pressed="false">Achsensymmetrie</button>
+    <button id="mode-rotate" aria-pressed="false">Punktsymmetrie</button>
+    <button id="clear">Löschen</button>
+</div>
+
+<div id="canvas-container">
+    <canvas id="board"></canvas>
+</div>
+
+<script>
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    const btnMirror = document.getElementById('mode-mirror');
+    const btnRotate = document.getElementById('mode-rotate');
+    const btnClear = document.getElementById('clear');
+
+    let mode = null;
+    let drawing = false;
+    let prev = null;
+
+    function setupCanvas() {
+        const ratio = Math.max(1, window.devicePixelRatio || 1);
+        const container = document.getElementById('canvas-container');
+        const width = container.clientWidth;
+        const height = width * 0.75;
+
+        canvas.width = width * ratio;
+        canvas.height = height * ratio;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+
+        ctx.scale(ratio, ratio);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 3;
+    }
+
+    function setActive(button, active) {
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    }
+
+    function selectMode(newMode) {
+        const currentMode = mode;
+        mode = (currentMode === newMode) ? null : newMode;
+        setActive(btnMirror, mode === 'mirror');
+        setActive(btnRotate, mode === 'rotate');
+    }
+
+    btnMirror.addEventListener('click', () => selectMode('mirror'));
+    btnRotate.addEventListener('click', () => selectMode('rotate'));
+    btnClear.addEventListener('click', () => ctx.clearRect(0, 0, canvas.width, canvas.height));
+
+    function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches ? e.touches[0] : e;
+        return {
+            x: touch.clientX - rect.left,
+            y: touch.clientY - rect.top
+        };
+    }
+
+    function mirrorPoint(p) {
+        return { x: canvas.clientWidth - p.x, y: p.y };
+    }
+
+    function rotatePoint180(p) {
+        return { x: canvas.clientWidth - p.x, y: canvas.clientHeight - p.y };
+    }
+
+    function drawSegment(a, b) {
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+    }
+
+    function onPointerDown(e) {
+        e.preventDefault();
+        drawing = true;
+        prev = getPos(e);
+    }
+
+    function onPointerMove(e) {
+        if (!drawing) return;
+        e.preventDefault();
+        const cur = getPos(e);
+        drawSegment(prev, cur);
+
+        if (mode === 'mirror') {
+            drawSegment(mirrorPoint(prev), mirrorPoint(cur));
+        } else if (mode === 'rotate') {
+            drawSegment(rotatePoint180(prev), rotatePoint180(cur));
+        }
+        prev = cur;
+    }
+
+    function onPointerUp() {
+        drawing = false;
+        prev = null;
+    }
+
+    canvas.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+
+    canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+    canvas.addEventListener('touchmove', onPointerMove, { passive: false });
+    canvas.addEventListener('touchend', onPointerUp);
+
+    window.addEventListener('resize', setupCanvas);
+    setupCanvas();
+</script>
