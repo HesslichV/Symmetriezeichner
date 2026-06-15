@@ -56,6 +56,8 @@
             justify-content: center;
             flex-wrap: wrap;
             backdrop-filter: blur(10px);
+            max-height: 80px;
+            overflow-y: auto;
         }
 
         .control-group {
@@ -93,6 +95,8 @@
         #color-picker {
             display: flex;
             gap: 8px;
+            flex-wrap: wrap;
+            max-width: 400px;
         }
 
         .color-btn {
@@ -103,6 +107,7 @@
             cursor: pointer;
             transition: all 0.2s ease;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
         }
 
         .color-btn:hover {
@@ -114,6 +119,36 @@
             border-color: white;
             box-shadow: 0 0 16px rgba(255, 255, 255, 0.5), inset 0 0 8px rgba(255, 255, 255, 0.3);
             transform: scale(1.15);
+        }
+
+        /* Custom Color Picker */
+        #custom-color-picker {
+            width: 36px;
+            height: 36px;
+            border: 3px solid #64748b;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            padding: 2px;
+            background: white;
+        }
+
+        #custom-color-picker:hover {
+            border-color: #94a3b8;
+            transform: scale(1.1);
+        }
+
+        #custom-color-picker.active {
+            border-color: white;
+            box-shadow: 0 0 16px rgba(255, 255, 255, 0.5);
+        }
+
+        input[type="color"] {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
         }
 
         /* Stroke-Width Slider */
@@ -171,6 +206,7 @@
             justify-content: center;
             transition: all 0.3s ease;
             text-decoration: none;
+            flex-shrink: 0;
         }
 
         .icon-btn:hover {
@@ -216,6 +252,7 @@
             width: 1px;
             height: 24px;
             background: rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
         }
 
         /* Responsive */
@@ -231,6 +268,10 @@
 
             #stroke-width-slider {
                 width: 80px;
+            }
+
+            #color-picker {
+                max-width: 300px;
             }
         }
     </style>
@@ -251,10 +292,21 @@
         <div class="control-group" id="color-picker">
             <button class="color-btn active" style="background-color: #000000;" data-color="#000000" title="Schwarz"></button>
             <button class="color-btn" style="background-color: #ef4444;" data-color="#ef4444" title="Rot"></button>
-            <button class="color-btn" style="background-color: #3b82f6;" data-color="#3b82f6" title="Blau"></button>
+            <button class="color-btn" style="background-color: #f97316;" data-color="#f97316" title="Orange"></button>
+            <button class="color-btn" style="background-color: #eab308;" data-color="#eab308" title="Gelb"></button>
+            <button class="color-btn" style="background-color: #84cc16;" data-color="#84cc16" title="Lime"></button>
             <button class="color-btn" style="background-color: #10b981;" data-color="#10b981" title="Grün"></button>
-            <button class="color-btn" style="background-color: #f59e0b;" data-color="#f59e0b" title="Orange"></button>
+            <button class="color-btn" style="background-color: #06b6d4;" data-color="#06b6d4" title="Cyan"></button>
+            <button class="color-btn" style="background-color: #3b82f6;" data-color="#3b82f6" title="Blau"></button>
             <button class="color-btn" style="background-color: #8b5cf6;" data-color="#8b5cf6" title="Lila"></button>
+            <button class="color-btn" style="background-color: #d946ef;" data-color="#d946ef" title="Magenta"></button>
+            <button class="color-btn" style="background-color: #ec4899;" data-color="#ec4899" title="Rosa"></button>
+            <button class="color-btn" style="background-color: #ffffff; border: 3px solid #475569;" data-color="#ffffff" title="Weiß"></button>
+            <div style="position: relative; display: flex; align-items: center;">
+                <div id="custom-color-picker">
+                    <input type="color" id="custom-color-input" value="#3b82f6">
+                </div>
+            </div>
         </div>
 
         <div class="separator"></div>
@@ -330,6 +382,8 @@
         const colorPicker = document.getElementById('color-picker');
         const strokeSlider = document.getElementById('stroke-width-slider');
         const downloadBtn = document.getElementById('download-btn');
+        const customColorInput = document.getElementById('custom-color-input');
+        const customColorPicker = document.getElementById('custom-color-picker');
 
         let mode = null;
         let drawing = false;
@@ -378,6 +432,15 @@
             redrawCanvas();
         }
 
+        function updateActiveColor(color) {
+            document.querySelectorAll('.color-btn, #custom-color-picker').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            if (color === customColorInput.value) {
+                customColorPicker.classList.add('active');
+            }
+        }
+
         btnMirror.addEventListener('click', () => selectMode('mirror'));
         btnRotate.addEventListener('click', () => selectMode('rotate'));
         
@@ -405,13 +468,33 @@
             }
         });
 
+        // Vordefinierte Farben
         colorPicker.addEventListener('click', (e) => {
             const target = e.target.closest('.color-btn');
             if (target) {
-                document.querySelector('.color-btn.active').classList.remove('active');
+                document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+                customColorPicker.classList.remove('active');
                 target.classList.add('active');
                 currentStroke.color = target.dataset.color;
             }
+        });
+
+        // Custom Color Picker
+        customColorInput.addEventListener('change', (e) => {
+            currentStroke.color = e.target.value;
+            customColorPicker.style.backgroundColor = e.target.value;
+            updateActiveColor(e.target.value);
+        });
+
+        customColorInput.addEventListener('input', (e) => {
+            currentStroke.color = e.target.value;
+            customColorPicker.style.backgroundColor = e.target.value;
+            updateActiveColor(e.target.value);
+        });
+
+        customColorPicker.addEventListener('click', () => {
+            document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+            customColorPicker.classList.add('active');
         });
 
         strokeSlider.addEventListener('input', (e) => {
