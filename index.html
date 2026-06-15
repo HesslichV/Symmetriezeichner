@@ -288,10 +288,14 @@
         const canvas = document.getElementById('board');
         const ctx = canvas.getContext('2d');
         
+        let canvasDisplayWidth = 0;
+        let canvasDisplayHeight = 0;
+        let dpr = window.devicePixelRatio || 1;
+
         // Responsive Canvas-Größe
         function resizeCanvas() {
             const container = document.getElementById('canvas-container');
-            const dpr = window.devicePixelRatio || 1;
+            dpr = window.devicePixelRatio || 1;
             
             // Aspect Ratio 16:9 für bessere Zeichenfläche
             const maxWidth = container.clientWidth - 20;
@@ -304,6 +308,9 @@
                 height = maxHeight;
                 width = height * 16 / 9;
             }
+            
+            canvasDisplayWidth = width;
+            canvasDisplayHeight = height;
             
             canvas.style.width = width + 'px';
             canvas.style.height = height + 'px';
@@ -345,18 +352,18 @@
 
         function drawHelpers() {
             if (mode === 'mirror') {
-                const centerX = canvas.width / (window.devicePixelRatio || 1) / 2;
+                const centerX = canvasDisplayWidth / 2;
                 ctx.strokeStyle = 'rgba(59, 130, 246, 0.2)';
                 ctx.lineWidth = 2;
                 ctx.setLineDash([8, 8]);
                 ctx.beginPath();
                 ctx.moveTo(centerX, 0);
-                ctx.lineTo(centerX, canvas.height);
+                ctx.lineTo(centerX, canvasDisplayHeight);
                 ctx.stroke();
                 ctx.setLineDash([]);
             } else if (mode === 'rotate') {
-                const centerX = canvas.width / (window.devicePixelRatio || 1) / 2;
-                const centerY = canvas.height / (window.devicePixelRatio || 1) / 2;
+                const centerX = canvasDisplayWidth / 2;
+                const centerY = canvasDisplayHeight / 2;
                 ctx.fillStyle = 'rgba(59, 130, 246, 0.3)';
                 ctx.beginPath();
                 ctx.arc(centerX, centerY, 8, 0, 2 * Math.PI);
@@ -423,13 +430,12 @@
             }, 'image/png');
         });
 
-        function getScaledPos(e) {
+        function getPos(e) {
             const rect = canvas.getBoundingClientRect();
-            const dpr = window.devicePixelRatio || 1;
             const touch = e.touches ? e.touches[0] : e;
             return {
-                x: (touch.clientX - rect.left) * dpr,
-                y: (touch.clientY - rect.top) * dpr
+                x: touch.clientX - rect.left,
+                y: touch.clientY - rect.top
             };
         }
 
@@ -450,16 +456,13 @@
             e.preventDefault();
             saveState();
             drawing = true;
-            lastPos = getScaledPos(e);
+            lastPos = getPos(e);
         }
 
         function onPointerMove(e) {
             if (!drawing) return;
             e.preventDefault();
-            const currentPos = getScaledPos(e);
-            const dpr = window.devicePixelRatio || 1;
-            const canvasDisplayWidth = canvas.width / dpr;
-            const canvasDisplayHeight = canvas.height / dpr;
+            const currentPos = getPos(e);
             
             const mirroredLast = mode === 'mirror' ? { x: canvasDisplayWidth - lastPos.x, y: lastPos.y } : null;
             const mirroredCurrent = mode === 'mirror' ? { x: canvasDisplayWidth - currentPos.x, y: currentPos.y } : null;
